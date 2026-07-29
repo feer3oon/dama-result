@@ -1,7 +1,8 @@
 /**
- * Admin API Routes - With Debug
+ * Admin API Routes - Fixed for Large Files
  */
 
+const { put, get } = require('@vercel/blob');
 const Storage = require('../lib/storage');
 const Processor = require('../lib/processor');
 const Auth = require('../lib/auth');
@@ -15,33 +16,16 @@ module.exports = async (req, res) => {
     if (path === '/login' && method === 'POST') {
       const { username, password } = body || {};
       
-      // Debug log
-      console.log('=== LOGIN ATTEMPT ===');
-      console.log('Username:', username);
-      console.log('Expected username:', process.env.ADMIN_USERNAME);
-      console.log('Username match:', username === process.env.ADMIN_USERNAME);
-      console.log('Password provided:', !!password);
-      console.log('=====================');
-      
       if (username !== process.env.ADMIN_USERNAME) {
-        console.log('❌ Username mismatch');
-        return res.status(401).json({ 
-          error: 'Invalid credentials',
-          debug: 'Username mismatch'
-        });
+        return res.status(401).json({ error: 'Invalid credentials' });
       }
       
       if (!Auth.verifyPassword(password)) {
-        console.log('❌ Password mismatch');
-        return res.status(401).json({ 
-          error: 'Invalid credentials',
-          debug: 'Password mismatch'
-        });
+        return res.status(401).json({ error: 'Invalid credentials' });
       }
       
       const token = Auth.generateToken(username);
       await Storage.addLog({ action: 'login', username });
-      console.log('✅ Login successful');
       return res.status(200).json({ token, expiresAt: Date.now() + 8 * 3600 * 1000 });
     }
 
@@ -73,51 +57,117 @@ module.exports = async (req, res) => {
         return res.status(200).json({ ok: true });
       }
 
-      // Upload file
-      if (path === '/upload' && method === 'POST') {
+      // Get upload token for direct Blob upload
+      if (path === '/upload-token' && method === 'GET') {
+        // Return a token that allows direct upload to Blob
+        // In production, you'd use @vercel/blob/client's createUploadToken
+        const token = process.env.BLOB_READ_WRITE_TOKEN;
+        if (!token) {
+          return res.status(500).json({ error: 'Blob not configured' });
+        }
+        return res.status(200).json({ token });
+      }
+
+      // Direct upload endpoint (for files < 4.5MB)
+      if (path === '/upload-direct' && method === 'POST') {
         const contentType = req.headers['content-type'] || '';
         
-        if (contentType.includes('multipart/form-data')) {
-          const formData = await req.formData();
-          const file = formData.get('file');
-          
-          if (!file) {
-            return res.status(400).json({ error: 'No file provided' });
-          }
+        if (!contentType.includes('multipart/form-data')) {
+          return res.status(400).json({ error: 'Invalid content type' });
+        }
 
-          const buffer = Buffer.from(await file.arrayBuffer());
-          await Storage.addLog({ action: 'upload_start', admin: req.admin.sub, fileName: file.name });
+        const formData = await req.formData();
+        const file = formData.get('file');
+        
+        if (!file) {
+          return res.status(400).json({ error: 'No file provided' });
+        }
 
-          // Process Excel
-          const rows = await Processor.readExcel(buffer);
-          const cleaned = Processor.validateAndClean(rows);
-          const deduped = Processor.removeDuplicates(cleaned);
-          const stats = Processor.computeStatistics(deduped);
-          const topStudents = Processor.topStudents(deduped, 50);
-
-          // Save to Blob
-          await Storage.setStudents(deduped);
-          await Storage.setStatistics(stats);
-          await Storage.setTopStudents(topStudents);
-          await Storage.setGovernorates(stats.governoratesList);
-
-          await Storage.addLog({ 
-            action: 'upload_complete', 
-            admin: req.admin.sub, 
-            students: deduped.length 
-          });
-
-          return res.status(200).json({
-            ok: true,
-            result: {
-              total: deduped.length,
-              statistics: stats,
-              topStudents: topStudents.slice(0, 10)
-            }
+        // Check size
+        if (file.size > 4 * 1024 * 1024) {
+          return res.status(413).json({ 
+            error: 'File too large. Please use a smaller file or split it.' 
           });
         }
 
-        return res.status(400).json({ error: 'Invalid content type' });
+        const buffer = Buffer.from(await file.arrayBuffer());
+        
+        // Upload to Blob
+        const blob = await put(`uploads/${Date.now()}-${file.name}`, buffer, {
+          access: 'public',
+          addRandomSuffix: true
+        });
+
+        await Storage.addLog({ 
+          action: 'upload_direct', 
+          admin: req.admin.sub, 
+          fileName: file.name,
+          size: file.size
+        });
+
+        return res.status(200).json({ 
+          ok: true, 
+          url: blob.url,
+          fileName: file.name
+        });
+      }
+
+      // Process uploaded file from Blob URL
+      if (path === '/process' && method === 'POST') {
+        const { blobUrl, fileName } = body || {};
+        
+        if (!blobUrl) {
+          return res.status(400).json({ error: 'No blob URL provided' });
+        }
+
+        await Storage.addLog({ 
+          action: 'process_start', 
+          admin: req.admin.sub, 
+          fileName 
+        });
+
+        // Download file from Blob
+        const response = await fetch(blobUrl);
+        if (!response.ok) {
+          throw new Error('Failed to download file from Blob');
+        }
+        
+        const buffer = Buffer.from(await response.arrayBuffer());
+
+        // Process Excel
+        const rows = await Processor.readExcel(buffer);
+        const cleaned = Processor.validateAndClean(rows);
+        const deduped = Processor.removeDuplicates(cleaned);
+        const stats = Processor.computeStatistics(deduped);
+        const topStudents = Processor.topStudents(deduped, 50);
+
+        // Save to Blob
+        await Storage.setStudents(deduped);
+        await Storage.setStatistics(stats);
+        await Storage.setTopStudents(topStudents);
+        await Storage.setGovernorates(stats.governoratesList);
+
+        await Storage.addLog({ 
+          action: 'process_complete', 
+          admin: req.admin.sub, 
+          students: deduped.length 
+        });
+
+        return res.status(200).json({
+          ok: true,
+          result: {
+            total: deduped.length,
+            statistics: stats,
+            topStudents: topStudents.slice(0, 10)
+          }
+        });
+      }
+
+      // Legacy upload (for backward compatibility)
+      if (path === '/upload' && method === 'POST') {
+        return res.status(400).json({ 
+          error: 'Please use the new upload method. Refresh the page.' 
+        });
       }
 
       // Publish
