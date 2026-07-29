@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة التحكم - DAMA</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body class="admin-page">
+  <div id="loginScreen" class="login-screen">
+    <div class="login-card">
+      <div class="login-logo">
+        <i class="fas fa-graduation-cap"></i>
+        <h1>DAMA</h1>
+        <p>لوحة التحكم</p>
+      </div>
+      <form id="loginForm">
+        <div class="form-group">
+          <label>اسم المستخدم</label>
+          <input type="text" id="username" required>
+        </div>
+        <div class="form-group">
+          <label>كلمة المرور</label>
+          <input type="password" id="password" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">
+          <i class="fas fa-sign-in-alt"></i>
+          تسجيل الدخول
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div id="adminDashboard" class="admin-dashboard" style="display: none;">
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <i class="fas fa-graduation-cap"></i>
+        <span>DAMA</span>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="#" class="nav-item active" data-section="dashboard">
+          <i class="fas fa-home"></i>
+          <span>الرئيسية</span>
+        </a>
+        <a href="#" class="nav-item" data-section="upload">
+          <i class="fas fa-upload"></i>
+          <span>رفع النتائج</span>
+        </a>
+        <a href="#" class="nav-item" data-section="settings">
+          <i class="fas fa-cog"></i>
+          <span>الإعدادات</span>
+        </a>
+        <a href="#" class="nav-item" data-section="logs">
+          <i class="fas fa-history"></i>
+          <span>السجلات</span>
+        </a>
+      </nav>
+      <button id="logoutBtn" class="btn btn-secondary btn-block">
+        <i class="fas fa-sign-out-alt"></i>
+        تسجيل الخروج
+      </button>
+    </aside>
+
+    <main class="admin-main">
+      <div id="dashboardSection" class="admin-section">
+        <h2 class="section-title">لوحة التحكم</h2>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-users"></i></div>
+            <div class="stat-value" id="dashTotalStudents">0</div>
+            <div class="stat-label">إجمالي الطلاب</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-eye"></i></div>
+            <div class="stat-value" id="dashVisitors">0</div>
+            <div class="stat-label">الزوار</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-search"></i></div>
+            <div class="stat-value" id="dashSearches">0</div>
+            <div class="stat-label">عمليات البحث</div>
+          </div>
+        </div>
+        <div class="recent-logs">
+          <h3>آخر العمليات</h3>
+          <div id="recentLogs" class="logs-list"></div>
+        </div>
+      </div>
+
+      <div id="uploadSection" class="admin-section" style="display: none;">
+        <h2 class="section-title">رفع ملف النتائج</h2>
+        <div class="upload-card">
+          <div class="upload-area" id="uploadArea">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <h3>اسحب الملف هنا أو اضغط للرفع</h3>
+            <p>يدعم ملفات Excel (.xlsx, .xls)</p>
+            <input type="file" id="fileInput" accept=".xlsx,.xls" style="display: none;">
+          </div>
+          <div id="uploadProgress" class="upload-progress" style="display: none;">
+            <div class="progress-bar">
+              <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <p id="progressText">جاري الرفع...</p>
+          </div>
+          <div id="uploadResult" class="upload-result" style="display: none;"></div>
+          <button id="publishBtn" class="btn btn-primary btn-block" style="display: none;">
+            <i class="fas fa-check"></i>
+            نشر النتائج
+          </button>
+        </div>
+      </div>
+
+      <div id="settingsSection" class="admin-section" style="display: none;">
+        <h2 class="section-title">الإعدادات</h2>
+        <div class="settings-card">
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="maintenanceMode">
+              وضع الصيانة
+            </label>
+          </div>
+          <div class="form-group">
+            <label>رسالة الإعلان</label>
+            <textarea id="announcementText" rows="3"></textarea>
+          </div>
+          <button id="saveSettingsBtn" class="btn btn-primary">
+            <i class="fas fa-save"></i>
+            حفظ الإعدادات
+          </button>
+        </div>
+      </div>
+
+      <div id="logsSection" class="admin-section" style="display: none;">
+        <h2 class="section-title">سجل العمليات</h2>
+        <div id="fullLogs" class="logs-list"></div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/admin.js"></script>
+</body>
+</html>
