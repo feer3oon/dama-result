@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>نتيجة الطالب - DAMA</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+  <header class="header">
+    <div class="container">
+      <a href="/" class="logo">
+        <div class="logo-icon">
+          <i class="fas fa-graduation-cap"></i>
+        </div>
+        <div class="logo-text">
+          <h1>DAMA</h1>
+          <p>نتيجة الثانوية العامة</p>
+        </div>
+      </a>
+    </div>
+  </header>
+
+  <main class="result-page">
+    <div class="container">
+      <div id="loadingState" class="loading-state">
+        <div class="spinner"></div>
+        <p>جاري تحميل النتيجة...</p>
+      </div>
+
+      <div id="errorState" class="error-state" style="display: none;">
+        <i class="fas fa-exclamation-triangle"></i>
+        <h2>لم يتم العثور على النتيجة</h2>
+        <p>تأكد من رقم الجلوس وحاول مرة أخرى</p>
+        <a href="/" class="btn btn-primary">العودة للرئيسية</a>
+      </div>
+
+      <div id="resultContent" class="result-content" style="display: none;">
+        <div class="student-card">
+          <div class="card-header">
+            <div class="student-photo">
+              <i class="fas fa-user"></i>
+            </div>
+            <div class="student-info">
+              <h2 id="studentName"></h2>
+              <div class="info-grid">
+                <div class="info-item">
+                  <i class="fas fa-id-card"></i>
+                  <span>رقم الجلوس:</span>
+                  <strong id="seatNumber"></strong>
+                </div>
+                <div class="info-item">
+                  <i class="fas fa-school"></i>
+                  <span>المدرسة:</span>
+                  <strong id="school"></strong>
+                </div>
+                <div class="info-item">
+                  <i class="fas fa-map-marker-alt"></i>
+                  <span>المحافظة:</span>
+                  <strong id="governorate"></strong>
+                </div>
+                <div class="info-item">
+                  <i class="fas fa-building"></i>
+                  <span>الإدارة:</span>
+                  <strong id="administration"></strong>
+                </div>
+                <div class="info-item">
+                  <i class="fas fa-book"></i>
+                  <span>الشعبة:</span>
+                  <strong id="division"></strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <div class="result-summary">
+              <div class="summary-item total">
+                <div class="summary-icon">
+                  <i class="fas fa-star"></i>
+                </div>
+                <div class="summary-value" id="totalDegree">0</div>
+                <div class="summary-label">المجموع</div>
+              </div>
+              <div class="summary-item percentage">
+                <div class="summary-icon">
+                  <i class="fas fa-percentage"></i>
+                </div>
+                <div class="summary-value" id="percentage">0%</div>
+                <div class="summary-label">النسبة</div>
+              </div>
+              <div class="summary-item status">
+                <div class="summary-icon">
+                  <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="summary-value" id="status"></div>
+                <div class="summary-label">الحالة</div>
+              </div>
+            </div>
+
+            <div class="qr-section">
+              <img id="qrCode" alt="QR Code">
+              <p>امسح الكود لمشاركة النتيجة</p>
+            </div>
+          </div>
+
+          <div class="card-actions">
+            <button class="btn btn-primary" onclick="window.print()">
+              <i class="fas fa-print"></i>
+              طباعة
+            </button>
+            <button class="btn btn-secondary" onclick="copyLink()">
+              <i class="fas fa-link"></i>
+              نسخ الرابط
+            </button>
+            <button class="btn btn-secondary" onclick="shareResult()">
+              <i class="fas fa-share-alt"></i>
+              مشاركة
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/result.js"></script>
+</body>
+</html>
