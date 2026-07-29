@@ -1,18 +1,16 @@
 /**
- * Admin API Routes
- * Handles admin panel operations
+ * Admin API Routes - Fixed Version
  */
 
-const { put } = require('@vercel/blob');
 const Storage = require('../lib/storage');
 const Processor = require('../lib/processor');
 const Auth = require('../lib/auth');
 
 module.exports = async (req, res) => {
-  const { method, url, body } = req;
-  const path = url.replace('/api/admin', '');
-
   try {
+    const { method, url, body } = req;
+    const path = url.replace('/api/admin', '');
+
     // Login
     if (path === '/login' && method === 'POST') {
       const { username, password } = body || {};
@@ -21,7 +19,7 @@ module.exports = async (req, res) => {
       }
       const token = Auth.generateToken(username);
       await Storage.addLog({ action: 'login', username });
-      return res.json({ token, expiresAt: Date.now() + 8 * 3600 * 1000 });
+      return res.status(200).json({ token, expiresAt: Date.now() + 8 * 3600 * 1000 });
     }
 
     // All other routes require auth
@@ -32,12 +30,12 @@ module.exports = async (req, res) => {
         const counters = await Storage.getCounters();
         const logs = await Storage.getLogs(50);
         const settings = await Storage.getSettings();
-        return res.json({
+        return res.status(200).json({
           stats: stats || { totalStudents: 0, governorates: 0, schools: 0, published: false },
           counters,
           logs,
-          maintenance: settings.maintenance,
-          announcement: settings.announcement
+          maintenance: settings.maintenance || false,
+          announcement: settings.announcement || ''
         });
       }
 
@@ -49,7 +47,7 @@ module.exports = async (req, res) => {
         if (typeof announcement === 'string') settings.announcement = announcement;
         await Storage.setSettings(settings);
         await Storage.addLog({ action: 'settings_update', admin: req.admin.sub });
-        return res.json({ ok: true });
+        return res.status(200).json({ ok: true });
       }
 
       // Upload file
@@ -57,7 +55,6 @@ module.exports = async (req, res) => {
         const contentType = req.headers['content-type'] || '';
         
         if (contentType.includes('multipart/form-data')) {
-          // File upload via Vercel Blob
           const formData = await req.formData();
           const file = formData.get('file');
           
@@ -75,7 +72,7 @@ module.exports = async (req, res) => {
           const stats = Processor.computeStatistics(deduped);
           const topStudents = Processor.topStudents(deduped, 50);
 
-          // Save to KV
+          // Save to Blob
           await Storage.setStudents(deduped);
           await Storage.setStatistics(stats);
           await Storage.setTopStudents(topStudents);
@@ -87,7 +84,7 @@ module.exports = async (req, res) => {
             students: deduped.length 
           });
 
-          return res.json({
+          return res.status(200).json({
             ok: true,
             result: {
               total: deduped.length,
@@ -107,14 +104,14 @@ module.exports = async (req, res) => {
         stats.publishedAt = new Date().toISOString();
         await Storage.setStatistics(stats);
         await Storage.addLog({ action: 'publish', admin: req.admin.sub });
-        return res.json({ ok: true });
+        return res.status(200).json({ ok: true });
       }
 
       // Logs
       if (path === '/logs' && method === 'GET') {
         const limit = Math.min(Number(req.query.limit) || 100, 500);
         const logs = await Storage.getLogs(limit);
-        return res.json(logs);
+        return res.status(200).json(logs);
       }
 
       return res.status(404).json({ error: 'Not found' });
@@ -122,6 +119,6 @@ module.exports = async (req, res) => {
 
   } catch (error) {
     console.error('Admin API Error:', error);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message || 'Internal server error' });
   }
 };
