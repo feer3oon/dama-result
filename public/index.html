@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>نتيجة الثانوية العامة من DAMA</title>
+  <meta name="description" content="منصة نتائج الثانوية العامة - ابحث عن نتيجتك بسهولة">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+  <div class="announcement-banner" id="announcementBanner" style="display: none;">
+    <div class="container">
+      <i class="fas fa-bullhorn"></i>
+      <span id="announcementText"></span>
+    </div>
+  </div>
+
+  <header class="header">
+    <div class="container">
+      <div class="logo">
+        <div class="logo-icon">
+          <i class="fas fa-graduation-cap"></i>
+        </div>
+        <div class="logo-text">
+          <h1>DAMA</h1>
+          <p>نتيجة الثانوية العامة</p>
+        </div>
+      </div>
+      <div class="header-stats">
+        <div class="stat-item">
+          <i class="fas fa-users"></i>
+          <span id="visitorCount">0</span>
+          <small>زائر</small>
+        </div>
+        <div class="stat-item">
+          <i class="fas fa-search"></i>
+          <span id="searchCount">0</span>
+          <small>بحث</small>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="particles" id="particles"></div>
+      <div class="container">
+        <div class="hero-content">
+          <h2 class="hero-title">نتيجة الثانوية العامة</h2>
+          <p class="hero-subtitle">ابحث عن نتيجتك بسهولة وسرعة</p>
+          
+          <div class="search-card">
+            <div class="search-input-wrapper">
+              <i class="fas fa-search"></i>
+              <input 
+                type="text" 
+                id="searchInput" 
+                placeholder="أدخل رقم الجلوس أو اسم الطالب"
+                autocomplete="off"
+              >
+              <button id="searchBtn" class="search-btn">
+                <span>بحث</span>
+                <i class="fas fa-arrow-left"></i>
+              </button>
+            </div>
+            <div class="suggestions" id="suggestions" style="display: none;"></div>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon">
+                <i class="fas fa-user-graduate"></i>
+              </div>
+              <div class="stat-value" id="totalStudents">0</div>
+              <div class="stat-label">طالب</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">
+                <i class="fas fa-map-marker-alt"></i>
+              </div>
+              <div class="stat-value" id="totalGovernorates">0</div>
+              <div class="stat-label">محافظة</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">
+                <i class="fas fa-school"></i>
+              </div>
+              <div class="stat-value" id="totalSchools">0</div>
+              <div class="stat-label">مدرسة</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="news-section">
+      <div class="container">
+        <h3 class="section-title">
+          <i class="fas fa-newspaper"></i>
+          آخر الأخبار
+        </h3>
+        <div class="news-grid" id="newsGrid"></div>
+      </div>
+    </section>
+
+    <section class="top-section">
+      <div class="container">
+        <div class="top-grid">
+          <div class="top-card">
+            <h3 class="section-title">
+              <i class="fas fa-trophy"></i>
+              أوائل الطلاب
+            </h3>
+            <div class="top-list" id="topStudentsList"></div>
+          </div>
+          <div class="top-card">
+            <h3 class="section-title">
+              <i class="fas fa-chart-line"></i>
+              أفضل المحافظات
+            </h3>
+            <div class="top-list" id="topGovernoratesList"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-logo">
+          <i class="fas fa-graduation-cap"></i>
+          <span>DAMA</span>
+        </div>
+        <p class="footer-text">نتيجة الثانوية العامة - منصة رسمية</p>
+        <div class="footer-links">
+          <a href="/admin.html"><i class="fas fa-lock"></i> لوحة التحكم</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 DAMA. جميع الحقوق محفوظة.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>
