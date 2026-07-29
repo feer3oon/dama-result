@@ -1,5 +1,5 @@
 /**
- * DAMA Admin Panel - Full Logic
+ * DAMA Admin Panel - Fixed Upload
  */
 
 const API_BASE = '/api/admin';
@@ -153,7 +153,7 @@ async function loadDashboard() {
   }
 }
 
-// ===== UPLOAD =====
+// ===== UPLOAD (FIXED - Direct to Blob) =====
 function setupUpload() {
   const area = document.getElementById('uploadArea');
   const input = document.getElementById('fileInput');
@@ -202,74 +202,142 @@ async function handleFile(file) {
   result.style.display = 'none';
   publishBtn.style.display = 'none';
   progressFill.style.width = '0%';
+  progressFill.style.background = 'linear-gradient(90deg, #0B3D91, #D4AF37)';
   progressText.textContent = 'جاري الرفع... 0%';
 
   try {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const xhr = new XMLHttpRequest();
-
-    xhr.upload.addEventListener('progress', (e) => {
-      if (e.lengthComputable) {
-        const pct = Math.round((e.loaded / e.total) * 100);
-        progressFill.style.width = pct + '%';
-        progressText.textContent = `جاري الرفع... ${pct}%`;
-      }
+    // Step 1: Get upload URL from backend
+    progressText.textContent = 'جاري تحضير الرفع...';
+    
+    const tokenRes = await fetch(`${API_BASE}/upload-token`, {
+      headers: { 'Authorization': `Bearer ${token}` }
     });
-
-    const data = await new Promise((resolve, reject) => {
-      xhr.onload = () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          resolve(JSON.parse(xhr.responseText));
-        } else {
-          reject(new Error(xhr.responseText));
-        }
-      };
-      xhr.onerror = () => reject(new Error('فشل الاتصال'));
-      xhr.open('POST', `${API_BASE}/upload`);
-      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-      xhr.send(formData);
-    });
-
-    progressFill.style.width = '100%';
-    progressText.textContent = '✅ تم الرفع والمعالجة بنجاح!';
-
-    if (data.result) {
-      result.style.display = 'block';
-      result.innerHTML = `
-        <h4 style="color:#0B3D91;margin-bottom:15px;">📊 ملخص النتائج</h4>
-        <p><strong>إجمالي الطلاب:</strong> ${data.result.total.toLocaleString('ar-EG')}</p>
-        <p><strong>عدد المحافظات:</strong> ${data.result.statistics.governorates}</p>
-        <p><strong>عدد المدارس:</strong> ${data.result.statistics.schools}</p>
-        <p><strong>نسبة النجاح:</strong> ${((data.result.statistics.passed / data.result.total) * 100).toFixed(1)}%</p>
-      `;
-      publishBtn.style.display = 'block';
-
-      publishBtn.onclick = async () => {
-        publishBtn.disabled = true;
-        publishBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري النشر...';
-        try {
-          await fetch(`${API_BASE}/publish`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          });
-          publishBtn.innerHTML = '<i class="fas fa-check"></i> تم النشر بنجاح!';
-          publishBtn.style.background = 'linear-gradient(135deg, #27ae60, #2ecc71)';
-        } catch (err) {
-          alert('❌ فشل النشر: ' + err.message);
-          publishBtn.disabled = false;
-          publishBtn.innerHTML = '<i class="fas fa-check"></i> نشر النتائج';
-        }
-      };
+    
+    if (!tokenRes.ok) {
+      throw new Error('فشل الحصول على token الرفع');
     }
+    
+    const { token: uploadToken } = await tokenRes.json();
+
+    // Step 2: Upload directly to Vercel Blob from browser
+    progressText.textContent = 'جاري الرفع... 10%';
+    progressFill.style.width = '10%';
+
+    const response = await fetch(`https://blob.dama.upload/upload`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${uploadToken}`,
+        'x-version': '1',
+      },
+      body: file,
+    });
+
+    // Fallback: Use our own endpoint if blob.dama.upload doesn't work
+    if (!response.ok) {
+      // Upload to our backend endpoint that proxies to Blob
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const uploadRes = await fetch(`${API_BASE}/upload-direct`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
+      
+      if (!uploadRes.ok) {
+        const errData = await uploadRes.json().catch(() => ({ error: 'Upload failed' }));
+        throw new Error(errData.error || 'فشل الرفع');
+      }
+      
+      const uploadData = await uploadRes.json();
+      progressFill.style.width = '100%';
+      progressText.textContent = '✅ تم الرفع! جاري المعالجة...';
+      
+      // Step 3: Process the uploaded file
+      const processRes = await fetch(`${API_BASE}/process`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ blobUrl: uploadData.url, fileName: file.name })
+      });
+      
+      if (!processRes.ok) {
+        const errData = await processRes.json().catch(() => ({ error: 'Processing failed' }));
+        throw new Error(errData.error || 'فشلت المعالجة');
+      }
+      
+      const data = await processRes.json();
+      showUploadResult(data, progressFill, progressText, result, publishBtn);
+      return;
+    }
+
+    const blob = await response.json();
+    progressFill.style.width = '60%';
+    progressText.textContent = '✅ تم الرفع! جاري المعالجة...';
+
+    // Step 3: Process the uploaded file
+    const processRes = await fetch(`${API_BASE}/process`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ blobUrl: blob.url, fileName: file.name })
+    });
+
+    if (!processRes.ok) {
+      const errData = await processRes.json().catch(() => ({ error: 'Processing failed' }));
+      throw new Error(errData.error || 'فشلت المعالجة');
+    }
+
+    const data = await processRes.json();
+    showUploadResult(data, progressFill, progressText, result, publishBtn);
+
   } catch (err) {
     progressFill.style.width = '100%';
     progressFill.style.background = '#e74c3c';
-    progressText.textContent = '❌ فشل الرفع: ' + err.message;
+    progressText.textContent = '❌ فشل: ' + err.message;
+    console.error('Upload error:', err);
+  }
+}
+
+function showUploadResult(data, progressFill, progressText, result, publishBtn) {
+  progressFill.style.width = '100%';
+  progressText.textContent = '✅ تم الرفع والمعالجة بنجاح!';
+
+  if (data.result) {
+    result.style.display = 'block';
+    const passRate = data.result.statistics.passed / data.result.total * 100;
+    result.innerHTML = `
+      <h4 style="color:#0B3D91;margin-bottom:15px;">📊 ملخص النتائج</h4>
+      <p><strong>إجمالي الطلاب:</strong> ${data.result.total.toLocaleString('ar-EG')}</p>
+      <p><strong>عدد المحافظات:</strong> ${data.result.statistics.governorates}</p>
+      <p><strong>عدد المدارس:</strong> ${data.result.statistics.schools}</p>
+      <p><strong>نسبة النجاح:</strong> ${passRate.toFixed(1)}%</p>
+    `;
+    publishBtn.style.display = 'block';
+
+    publishBtn.onclick = async () => {
+      publishBtn.disabled = true;
+      publishBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري النشر...';
+      try {
+        await fetch(`${API_BASE}/publish`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        publishBtn.innerHTML = '<i class="fas fa-check"></i> تم النشر بنجاح!';
+        publishBtn.style.background = 'linear-gradient(135deg, #27ae60, #2ecc71)';
+      } catch (err) {
+        alert('❌ فشل النشر: ' + err.message);
+        publishBtn.disabled = false;
+        publishBtn.innerHTML = '<i class="fas fa-check"></i> نشر النتائج';
+      }
+    };
   }
 }
 
@@ -348,4 +416,4 @@ async function loadLogs() {
   } catch (err) {
     console.error('Logs error:', err);
   }
-                               }
+}
