@@ -1,5 +1,5 @@
 /**
- * Admin API Routes - Fixed Version
+ * Admin API Routes - With Debug
  */
 
 const Storage = require('../lib/storage');
@@ -14,11 +14,34 @@ module.exports = async (req, res) => {
     // Login
     if (path === '/login' && method === 'POST') {
       const { username, password } = body || {};
-      if (username !== process.env.ADMIN_USERNAME || !Auth.verifyPassword(password)) {
-        return res.status(401).json({ error: 'Invalid credentials' });
+      
+      // Debug log
+      console.log('=== LOGIN ATTEMPT ===');
+      console.log('Username:', username);
+      console.log('Expected username:', process.env.ADMIN_USERNAME);
+      console.log('Username match:', username === process.env.ADMIN_USERNAME);
+      console.log('Password provided:', !!password);
+      console.log('=====================');
+      
+      if (username !== process.env.ADMIN_USERNAME) {
+        console.log('❌ Username mismatch');
+        return res.status(401).json({ 
+          error: 'Invalid credentials',
+          debug: 'Username mismatch'
+        });
       }
+      
+      if (!Auth.verifyPassword(password)) {
+        console.log('❌ Password mismatch');
+        return res.status(401).json({ 
+          error: 'Invalid credentials',
+          debug: 'Password mismatch'
+        });
+      }
+      
       const token = Auth.generateToken(username);
       await Storage.addLog({ action: 'login', username });
+      console.log('✅ Login successful');
       return res.status(200).json({ token, expiresAt: Date.now() + 8 * 3600 * 1000 });
     }
 
